@@ -8,7 +8,7 @@ import SlideEditor from './components/SlideEditor';
 import UserList from './components/UserList';
 import type { Presentation, Slide, TextBlock, User } from './types';
 
-const socket = io('http://localhost:3000');
+const socket = io('https://presentation-project-server.onrender.com');
 
 export default function App() {
   // const { presentationId } = useParams();
