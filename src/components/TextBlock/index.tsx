@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import type { TextBlock } from '../types';
+import type { TextBlock } from '../../types';
 
 interface TextBlockProps {
   block: TextBlock;

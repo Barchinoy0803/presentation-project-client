@@ -1,4 +1,4 @@
-import type { Slide } from '../types.ts';
+import type { Slide } from '../../types.ts';
 
 interface SlideListProps {
   slides: Slide[];
@@ -25,9 +25,8 @@ export default function SlideList({
           <div
             key={slide.id}
             onClick={() => onSelectSlide(slide.id)}
-            className={`cursor-pointer p-2 rounded mb-1 ${
-              slide.id === currentSlideId ? 'bg-blue-400 text-white' : 'hover:bg-blue-100'
-            }`}
+            className={`cursor-pointer p-2 rounded mb-1 ${slide.id === currentSlideId ? 'bg-blue-400 text-white' : 'hover:bg-blue-100'
+              }`}
           >
             {slide.title}
             {isCreator && (

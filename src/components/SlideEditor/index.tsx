@@ -1,5 +1,5 @@
-import type { Slide, TextBlock } from '../types';
-import TextBlockComponent from './TextBlock';
+import type { Slide, TextBlock } from '../../types';
+import TextBlockComponent from '../TextBlock';
 
 interface SlideEditorProps {
   slide: Slide;
