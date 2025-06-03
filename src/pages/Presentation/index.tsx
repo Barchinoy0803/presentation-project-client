@@ -5,36 +5,37 @@ import type { Presentation, Slide, TextBlock, User } from '../../types';
 import SlideList from '../../components/SlideList';
 import SlideEditor from '../../components/SlideEditor';
 import UserList from '../../components/UserList';
-// import { useParams } from 'react-router-dom'; 
+import { useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../service';
 
-
-// const socket = io('https://presentation-project-server.onrender.com');
-const socket = io('http://localhost:3000');
-
+const socket = io('https://presentation-project-server.onrender.com');
 
 const PresentationPage = () => {
-  // const { presentationId } = useParams();
-  const presentationId = "1"
+  const { presentationId } = useParams();
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [currentSlideId, setCurrentSlideId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
+  const { user, title } = useSelector((state: RootState) => state.presentationDialog.presentationData);
+
   useEffect(() => {
-    if (!presentationId) return;
+    socket.emit('join-presentation', {
+      user,
+      presentationId: presentationId === 'new' ? undefined : presentationId,
+      title: title || 'Untitled Presentation',
+    });
+  }, [presentationId]);
 
-    const defaultUserId = uuidv4();
-    const newUser: User = {
-      id: defaultUserId,
-      nickname: 'User-' + defaultUserId.slice(0, 4), 
-      role: 'editor',
-      presentationId: presentationId,
-    };
-
-    setCurrentUser(newUser);
-    socket.emit('join-presentation', { user: newUser, presentationId });
-
+  useEffect(() => {
     socket.on('presentation-data', (data: Presentation) => {
       setPresentation(data);
+
+      const matchedUser = data.users.find((u) => u.nickname === user.nickname);
+      if (matchedUser) {
+        setCurrentUser(matchedUser);
+      }
+
       if (!currentSlideId && data.slides.length > 0) {
         setCurrentSlideId(data.slides[0].id);
       }
@@ -62,7 +63,7 @@ const PresentationPage = () => {
       socket.off('presentation-update');
       socket.off('user-role-changed');
     };
-  }, [presentationId]);
+  }, [currentSlideId, currentUser, user.nickname]);
 
   if (!presentation || !currentUser) return <div className="p-4">Loading presentation...</div>;
 
@@ -119,11 +120,11 @@ const PresentationPage = () => {
   };
 
   const changeUserRole = (userId: string, newRole: 'editor' | 'viewer') => {
-    if (!isCreator || !presentationId) return;
+    if (!isCreator) return;
     socket.emit('change-user-role', {
       userId,
       newRole,
-      presentationId, // ✅ Qo‘shildi
+      presentationId: presentation.id,
     });
   };
 
@@ -157,6 +158,6 @@ const PresentationPage = () => {
       />
     </div>
   );
-}
+};
 
-export default PresentationPage
+export default PresentationPage;

@@ -1,8 +1,9 @@
+import { formLabelClasses } from "@mui/material";
+
 export type User = {
   id: string;
   nickname: string;
   role: 'creator' | 'editor' | 'viewer';
-  presentationId: string;
 };
 
 export type TextBlock = {
@@ -25,3 +26,20 @@ export type Presentation = {
   users: User[];
   creatorId: string;
 };
+
+export const DIALOGTYPE = {
+  NEW: 0,
+  EXIST: 1,
+} as const;
+
+export type DIALOGTYPE = (typeof DIALOGTYPE)[keyof typeof DIALOGTYPE];
+
+export interface PresentationDialog {
+  isOpen: boolean;
+  type: DIALOGTYPE
+}
+
+export interface PresentationData {
+  user: User;
+  title: string;
+}

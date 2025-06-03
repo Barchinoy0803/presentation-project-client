@@ -1,8 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { mainApi } from "./api/";
+import presentationDialog from "./features/presentation.slice"
 
 export const store = configureStore({
   reducer: {
+    presentationDialog,
     [mainApi.reducerPath]: mainApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
