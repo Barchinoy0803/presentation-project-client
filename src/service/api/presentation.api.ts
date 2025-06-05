@@ -8,8 +8,15 @@ const extendedApi = mainApi.injectEndpoints({
         url:  '/presentation',
       }),
     }),
+    createPresentation: build.mutation({
+      query:(body) => ({
+        method: 'POST',
+        url: '/presentation/create',
+        body,
+      })
+    })
   }),
   overrideExisting: false,
 })
 
-export const { useGetPresentationsQuery } = extendedApi
+export const { useGetPresentationsQuery, useCreatePresentationMutation } = extendedApi

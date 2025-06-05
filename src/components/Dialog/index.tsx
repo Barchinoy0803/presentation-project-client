@@ -5,41 +5,36 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../service';
-import { setPresentationData, setPresentationDialog } from '../../service/features/presentation.slice';
-import { DIALOGTYPE, type User } from '../../types';
+import { setPresentationDialog, setUserName } from '../../service/features/presentation.slice';
+import { DIALOGTYPE } from '../../types';
 import { TextField } from '@mui/material';
-import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
+import { useCreatePresentationMutation } from '../../service/api/presentation.api';
 
 const PresentationDialog = () => {
     const dispatch = useDispatch()
     const navigate = useNavigate()
-    const [usernameValue, setUsernameValue] = useState('');
-    const [titleValue, setTitleValue] = useState('');
+    const [username, setUsername] = useState('');
+    const [title, setTitle] = useState('');
 
-    const { presentationDialog: { isOpen, type } } = useSelector((state: RootState) => state.presentationDialog);
-
+    const { presentationDialog: { isOpen, type, presentationId } } = useSelector((state: RootState) => state.presentation);
+    
+    const [createPresentation] = useCreatePresentationMutation()
 
     const handleClose = () => {
         dispatch(setPresentationDialog({ isOpen: false, type: DIALOGTYPE.NEW }));
     };
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async(e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
-        const userId = uuidv4();
-
-        const newUser: User = {
-            id: userId,
-            nickname: usernameValue,
-            role: 'editor',
-        };
-
-        dispatch(setPresentationData({user: newUser, title: titleValue}))
-
-
-        navigate("/presentation/new")
-
+        
+        if (type === DIALOGTYPE.NEW) {
+            const { data } = await createPresentation({username, title})
+            navigate(`/presentation/${data.presentationId}`)
+        } else {
+            navigate(`/presentation/${presentationId}`)
+        }
+        dispatch(setUserName(username))
         handleClose();
     };
 
@@ -49,21 +44,21 @@ const PresentationDialog = () => {
             onClose={handleClose}
         >
             <DialogTitle>
-                {type === DIALOGTYPE.NEW ? 'Create new presentation' : 'Update presentation'}
+                {type === DIALOGTYPE.NEW ? 'Create new presentation' : 'Enter to the presentation'}
             </DialogTitle>
             <DialogContent>
                 <form onSubmit={handleSubmit} className="flex flex-col w-[400px] gap-5 mt-3">
                     <TextField
-                        onChange={(e) => setUsernameValue(e.target.value)}
-                        value={usernameValue}
+                        onChange={(e) => setUsername(e.target.value)}
+                        value={username}
                         label="Username"
                         variant="outlined"
                         required
                     />
                     {type === DIALOGTYPE.NEW && (
                         <TextField
-                            onChange={(e) => setTitleValue(e.target.value)}
-                            value={titleValue}
+                            onChange={(e) => setTitle(e.target.value)}
+                            value={title}
                             label="Presentation name"
                             variant="outlined"
                             required
@@ -72,7 +67,7 @@ const PresentationDialog = () => {
                     <div className="flex justify-end gap-3 mt-4">
                         <Button onClick={handleClose} color="secondary">Cancel</Button>
                         <Button type="submit" variant="contained" color="primary">
-                            {type === DIALOGTYPE.NEW ? 'Create' : 'Update'}
+                            {type === DIALOGTYPE.NEW ? 'Create' : 'Enter'}
                         </Button>
                     </div>
                 </form>

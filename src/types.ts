@@ -1,9 +1,7 @@
-import { formLabelClasses } from "@mui/material";
-
 export type User = {
-  id: string;
+  id?: string;
   nickname: string;
-  role: 'creator' | 'editor' | 'viewer';
+  role?: 'creator' | 'editor' | 'viewer';
 };
 
 export type TextBlock = {
@@ -36,7 +34,8 @@ export type DIALOGTYPE = (typeof DIALOGTYPE)[keyof typeof DIALOGTYPE];
 
 export interface PresentationDialog {
   isOpen: boolean;
-  type: DIALOGTYPE
+  type: DIALOGTYPE;
+  presentationId?: String;
 }
 
 export interface PresentationData {

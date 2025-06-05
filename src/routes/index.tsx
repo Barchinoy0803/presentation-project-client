@@ -10,7 +10,7 @@ const MainRouter = () => {
                 path: '/', element: <Home />
             },
             {
-                path: '/presentation/:id', element: <PresentationPage/>
+                path: '/presentation/:presentationId', element: <PresentationPage/>
             }
         ])
     )

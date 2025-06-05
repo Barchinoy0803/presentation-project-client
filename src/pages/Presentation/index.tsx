@@ -9,7 +9,7 @@ import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../service';
 
-const socket = io('https://presentation-project-server.onrender.com');
+const socket = io('http://localhost:3000');
 
 const PresentationPage = () => {
   const { presentationId } = useParams();
@@ -17,13 +17,13 @@ const PresentationPage = () => {
   const [currentSlideId, setCurrentSlideId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const { user, title } = useSelector((state: RootState) => state.presentationDialog.presentationData);
+  const { userName } = useSelector((state: RootState) => state.presentation);
 
   useEffect(() => {
+    console.log(presentationId)
     socket.emit('join-presentation', {
-      user,
-      presentationId: presentationId === 'new' ? undefined : presentationId,
-      title: title || 'Untitled Presentation',
+      nickname: userName,
+      presentationId,
     });
   }, [presentationId]);
 
@@ -31,7 +31,7 @@ const PresentationPage = () => {
     socket.on('presentation-data', (data: Presentation) => {
       setPresentation(data);
 
-      const matchedUser = data.users.find((u) => u.nickname === user.nickname);
+      const matchedUser = data.users.find((u) => u.nickname === userName);
       if (matchedUser) {
         setCurrentUser(matchedUser);
       }
@@ -63,7 +63,7 @@ const PresentationPage = () => {
       socket.off('presentation-update');
       socket.off('user-role-changed');
     };
-  }, [currentSlideId, currentUser, user.nickname]);
+  }, [currentSlideId, currentUser, userName]);
 
   if (!presentation || !currentUser) return <div className="p-4">Loading presentation...</div>;
 
@@ -152,7 +152,7 @@ const PresentationPage = () => {
       </main>
       <UserList
         users={presentation.users}
-        currentUserId={currentUser.id}
+        currentUserId={currentUser.id!}
         onChangeRole={changeUserRole}
         isCreator={isCreator}
       />

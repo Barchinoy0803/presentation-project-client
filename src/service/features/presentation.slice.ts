@@ -4,12 +4,14 @@ import type { PresentationData, PresentationDialog } from '../../types'
 
 export interface PresentationState {
     presentationDialog: PresentationDialog,
-    presentationData: PresentationData
+    presentationData: PresentationData,
+    userName: string;
 }
 
 const initialState: PresentationState = {
     presentationDialog: JSON.parse(localStorage.getItem("presentations") || "[]"),
-    presentationData: JSON.parse(localStorage.getItem("presentationData") || "{}")
+    presentationData: JSON.parse(localStorage.getItem("presentationData") || "{}"),
+    userName: localStorage.getItem("userName") || ""
 }
 
 export const PresentationState = createSlice({
@@ -23,9 +25,13 @@ export const PresentationState = createSlice({
         setPresentationData(state, action: PayloadAction<PresentationData>) {
             state.presentationData = action.payload
             localStorage.setItem("presentationData", JSON.stringify(state.presentationData))
+        },
+        setUserName(state, action: PayloadAction<string>) {
+            state.userName = action.payload;
+            localStorage.setItem("userName", state.userName)
         }
     },
 })
 
-export const { setPresentationDialog, setPresentationData } = PresentationState.actions
+export const { setPresentationDialog, setPresentationData, setUserName } = PresentationState.actions
 export default PresentationState.reducer
