@@ -9,7 +9,7 @@ import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../service';
 
-const socket = io('http://localhost:3000');
+const socket = io('https://presentation-project-server.onrender.com');
 
 const PresentationPage = () => {
   const { presentationId } = useParams();
