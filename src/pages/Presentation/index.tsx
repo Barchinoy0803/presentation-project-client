@@ -20,7 +20,6 @@ const PresentationPage = () => {
   const { userName } = useSelector((state: RootState) => state.presentation);
 
   useEffect(() => {
-    console.log(presentationId)
     socket.emit('join-presentation', {
       nickname: userName,
       presentationId,
@@ -30,12 +29,10 @@ const PresentationPage = () => {
   useEffect(() => {
     socket.on('presentation-data', (data: Presentation) => {
       setPresentation(data);
-
       const matchedUser = data.users.find((u) => u.nickname === userName);
       if (matchedUser) {
         setCurrentUser(matchedUser);
       }
-
       if (!currentSlideId && data.slides.length > 0) {
         setCurrentSlideId(data.slides[0].id);
       }
@@ -72,14 +69,14 @@ const PresentationPage = () => {
 
   const updateBlock = (block: TextBlock) => {
     if (!currentSlide) return;
-    const updatedSlides = presentation.slides.map((slide) =>
-      slide.id === currentSlide.id
-        ? { ...slide, blocks: slide.blocks.map((b) => (b.id === block.id ? block : b)) }
-        : slide
-    );
-    const newPresentation = { ...presentation, slides: updatedSlides };
-    setPresentation(newPresentation);
-    socket.emit('presentation-update', newPresentation);
+    const updatedSlide = {
+      ...currentSlide,
+      blocks: currentSlide.blocks.map((b) => (b.id === block.id ? block : b)),
+    };
+    socket.emit('update-slide', {
+      presentationId: presentation.id,
+      slide: updatedSlide,
+    });
   };
 
   const addBlock = () => {
@@ -90,12 +87,14 @@ const PresentationPage = () => {
       x: 50,
       y: 50,
     };
-    const updatedSlides = presentation.slides.map((slide) =>
-      slide.id === currentSlide.id ? { ...slide, blocks: [...slide.blocks, newBlock] } : slide
-    );
-    const newPresentation = { ...presentation, slides: updatedSlides };
-    setPresentation(newPresentation);
-    socket.emit('presentation-update', newPresentation);
+    const updatedSlide = {
+      ...currentSlide,
+      blocks: [...currentSlide.blocks, newBlock],
+    };
+    socket.emit('update-slide', {
+      presentationId: presentation.id,
+      slide: updatedSlide,
+    });
   };
 
   const addSlide = () => {
@@ -104,19 +103,17 @@ const PresentationPage = () => {
       title: 'New Slide',
       blocks: [],
     };
-    const newPresentation = { ...presentation, slides: [...presentation.slides, newSlide] };
-    setPresentation(newPresentation);
-    setCurrentSlideId(newSlide.id);
-    socket.emit('presentation-update', newPresentation);
+    socket.emit('add-slide', {
+      presentationId: presentation.id,
+      slide: newSlide,
+    });
   };
 
   const removeSlide = (id: string) => {
-    if (presentation.slides.length <= 1) return alert('Cannot delete the last slide');
-    const newSlides = presentation.slides.filter((s) => s.id !== id);
-    const newPresentation = { ...presentation, slides: newSlides };
-    setPresentation(newPresentation);
-    if (id === currentSlideId) setCurrentSlideId(newSlides[0].id);
-    socket.emit('presentation-update', newPresentation);
+    socket.emit('remove-slide', {
+      presentationId: presentation.id,
+      slideId: id,
+    });
   };
 
   const changeUserRole = (userId: string, newRole: 'editor' | 'viewer') => {
