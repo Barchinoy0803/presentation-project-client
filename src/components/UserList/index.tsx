@@ -26,8 +26,8 @@ export default function UserList({ users, currentUserId, onChangeRole, isCreator
                 onChange={(e) => onChangeRole(user.id!, e.target.value as 'EDITOR' | 'VIEWER')}
                 className="ml-2 border border-gray-300 rounded"
               >
-                <option value="viewer">Viewer</option>
-                <option value="editor">Editor</option>
+                <option value='VIEWER'>Viewer</option>
+                <option value='EDITOR'>Editor</option>
               </select>
             )}
           </div>

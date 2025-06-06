@@ -16,7 +16,7 @@ const Home = () => {
             presentationId,
         }))
     }
-
+    console.log(data)
     return (
         <>
             <div className='container mx-auto mt-5 flex gap-5 justify-end'>
@@ -29,14 +29,10 @@ const Home = () => {
                         <Box onClick={() => handleOpenDialog(false, item.id)} key={item.id} className='flex flex-col gap-1 shadow-lg p-3 rounded-[10px] cursor-pointer'>
                             <img className='h-[200px]' src="" alt="" />
                             <p className='text-[20px]'>{item.title}</p>
-                            {
-                                item?.users?.map((user) => (
-                                    <div className='flex gap-2' key={user.id}>
-                                        <strong>{user.nickname}</strong>
-                                        <p>({user.role})</p>
-                                    </div>
-                                ))
-                            }
+                            <div className='flex gap-2'>
+                                <strong>{item.creatorName}</strong>
+                                <p>(Creator)</p>
+                            </div>
                         </Box>
                     ))
                 }

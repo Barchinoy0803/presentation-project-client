@@ -23,6 +23,7 @@ export type Presentation = {
   slides: Slide[];
   users: User[];
   creatorId: string;
+  creatorName: string;
 };
 
 export const DIALOGTYPE = {
