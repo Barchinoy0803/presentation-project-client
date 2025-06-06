@@ -1,145 +1,285 @@
-import { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { v4 as uuidv4 } from 'uuid';
-import type { Presentation, Slide, TextBlock, User } from '../../types';
+import { useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import SlideList from '../../components/SlideList';
 import SlideEditor from '../../components/SlideEditor';
 import UserList from '../../components/UserList';
-import { useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import type { Presentation, TextBlock, User, Slide } from '../../types';
 import type { RootState } from '../../service';
+import debounce from 'lodash/debounce';
 
-const socket = io('https://presentation-project-server.onrender.com');
+const socket: Socket = io('http://localhost:3000');
 
 const PresentationPage = () => {
-  const { presentationId } = useParams();
+  const { presentationId } = useParams<{ presentationId: string }>();
+  const { userName } = useSelector((s: RootState) => s.presentation);
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [currentSlideId, setCurrentSlideId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const { userName } = useSelector((state: RootState) => state.presentation);
-
   useEffect(() => {
-    socket.emit('join-presentation', {
-      nickname: userName,
-      presentationId,
-    });
-  }, [presentationId]);
-
-  useEffect(() => {
-    socket.on('presentation-data', (data: Presentation) => {
-      setPresentation(data);
-      const matchedUser = data.users.find((u) => u.nickname === userName);
-      if (matchedUser) {
-        setCurrentUser(matchedUser);
-      }
-      if (!currentSlideId && data.slides.length > 0) {
-        setCurrentSlideId(data.slides[0].id);
-      }
-    });
-
-    socket.on('presentation-update', (data: Presentation) => {
-      setPresentation(data);
-    });
-
-    socket.on('user-role-changed', (updatedUser: User) => {
-      setPresentation((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          users: prev.users.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
-        };
-      });
-      if (currentUser && updatedUser.id === currentUser.id) {
-        setCurrentUser(updatedUser);
-      }
-    });
+    if (presentationId && userName) {
+      socket.emit('join-presentation', { nickname: userName, presentationId });
+    }
 
     return () => {
       socket.off('presentation-data');
-      socket.off('presentation-update');
+      socket.off('slide-added');
+      socket.off('block-updated');
+      socket.off('block-added');
+      socket.off('block-removed');
+      socket.off('slide-removed');
       socket.off('user-role-changed');
+      socket.off('slide-navigated');
     };
-  }, [currentSlideId, currentUser, userName]);
+  }, [presentationId, userName]);
 
-  if (!presentation || !currentUser) return <div className="p-4">Loading presentation...</div>;
+  const currentSlide = useMemo(() => {
+    if (!presentation || !currentSlideId) return null;
+    return presentation.slides.find(s => s.id === currentSlideId) || null;
+  }, [presentation, currentSlideId]);
 
-  const currentSlide = presentation.slides.find((s) => s.id === currentSlideId);
-  const isCreator = currentUser.id === presentation.creatorId;
+  const isCreator = useMemo(() => {
+    return currentUser?.id === presentation?.creatorId;
+  }, [currentUser, presentation]);
+
+  useEffect(() => {
+    const onPresentationData = (data: Presentation) => {
+      setPresentation(data);
+      const me = data.users.find(u => u.nickname === userName);
+      if (me) setCurrentUser(me);
+      if (!currentSlideId && data.slides.length > 0) {
+        setCurrentSlideId(data.slides[0].id);
+      }
+    };
+
+    const onSlideAdded = (slide: Slide) => {
+      setPresentation(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          slides: [...prev.slides, slide],
+        };
+      });
+    };
+
+    const onBlockUpdated = ({ slideId, block }: { slideId: string; block: TextBlock }) => {
+      if (slideId !== currentSlideId) return;
+      setPresentation(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          slides: prev.slides.map(slide => 
+            slide.id === slideId
+              ? {
+                  ...slide,
+                  blocks: slide.blocks.map(b => b.id === block.id ? block : b),
+                }
+              : slide
+          ),
+        };
+      });
+    };
+
+    const onBlockAdded = ({ slideId, block }: { slideId: string; block: TextBlock }) => {
+      setPresentation(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          slides: prev.slides.map(slide => 
+            slide.id === slideId
+              ? {
+                  ...slide,
+                  blocks: [...slide.blocks, block],
+                }
+              : slide
+          ),
+        };
+      });
+    };
+
+    const onBlockRemoved = ({ slideId, blockId }: { slideId: string; blockId: string }) => {
+      setPresentation(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          slides: prev.slides.map(slide => 
+            slide.id === slideId
+              ? {
+                  ...slide,
+                  blocks: slide.blocks.filter(b => b.id !== blockId),
+                }
+              : slide
+          ),
+        };
+      });
+    };
+
+    const onSlideRemoved = (slideId: string) => {
+      setPresentation(prev => {
+        if (!prev) return prev;
+        const newSlides = prev.slides.filter(s => s.id !== slideId);
+        return {
+          ...prev,
+          slides: newSlides,
+        };
+      });
+    };
+
+    const onUserRoleChanged = (user: User) => {
+      setPresentation(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          users: prev.users.map(u => u.id === user.id ? user : u),
+        };
+      });
+      if (currentUser?.id === user.id) {
+        setCurrentUser(user);
+      }
+    };
+
+    const onSlideNavigated = (slideId: string) => {
+      setCurrentSlideId(slideId);
+    };
+
+    socket.on('presentation-data', onPresentationData);
+    socket.on('slide-added', onSlideAdded);
+    socket.on('block-updated', onBlockUpdated);
+    socket.on('block-added', onBlockAdded);
+    socket.on('block-removed', onBlockRemoved);
+    socket.on('slide-removed', onSlideRemoved);
+    socket.on('user-role-changed', onUserRoleChanged);
+    socket.on('slide-navigated', onSlideNavigated);
+
+    return () => {
+      socket.off('presentation-data', onPresentationData);
+      socket.off('slide-added', onSlideAdded);
+      socket.off('block-updated', onBlockUpdated);
+      socket.off('block-added', onBlockAdded);
+      socket.off('block-removed', onBlockRemoved);
+      socket.off('slide-removed', onSlideRemoved);
+      socket.off('user-role-changed', onUserRoleChanged);
+      socket.off('slide-navigated', onSlideNavigated);
+    };
+  }, [currentSlideId, currentUser?.id, userName]);
+
+  const debouncedUpdateBlock = useCallback(
+    debounce((block: TextBlock) => {
+      if (!currentSlide) return;
+      socket.emit('update-block', {
+        presentationId: presentation?.id,
+        block,
+        slideId: currentSlide.id,
+      });
+    }, 100),
+    [currentSlide, presentation?.id]
+  );
 
   const updateBlock = (block: TextBlock) => {
     if (!currentSlide) return;
-    const updatedSlide = {
-      ...currentSlide,
-      blocks: currentSlide.blocks.map((b) => (b.id === block.id ? block : b)),
-    };
-    socket.emit('update-slide', {
-      presentationId: presentation.id,
-      slide: updatedSlide,
+    
+    setPresentation(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        slides: prev.slides.map(slide => 
+          slide.id === currentSlide.id
+            ? {
+                ...slide,
+                blocks: slide.blocks.map(b => b.id === block.id ? block : b),
+              }
+            : slide
+        ),
+      };
     });
+
+    debouncedUpdateBlock(block);
   };
 
   const addBlock = () => {
     if (!currentSlide) return;
     const newBlock: TextBlock = {
       id: uuidv4(),
-      content: 'New text block. **Markdown** supported!',
+      content: 'New Text',
       x: 50,
       y: 50,
     };
-    const updatedSlide = {
-      ...currentSlide,
-      blocks: [...currentSlide.blocks, newBlock],
-    };
-    socket.emit('update-slide', {
-      presentationId: presentation.id,
-      slide: updatedSlide,
+    socket.emit('add-block', {
+      presentationId: presentation?.id,
+      block: newBlock,
+      slideId: currentSlide.id,
+    });
+  };
+
+  const removeBlock = (blockId: string) => {
+    if (!currentSlide) return;
+    socket.emit('remove-block', {
+      presentationId: presentation?.id,
+      blockId,
+      slideId: currentSlide.id,
     });
   };
 
   const addSlide = () => {
-    const newSlide: Slide = {
+    const newSlide = {
       id: uuidv4(),
       title: 'New Slide',
       blocks: [],
     };
     socket.emit('add-slide', {
-      presentationId: presentation.id,
+      presentationId: presentation?.id,
       slide: newSlide,
     });
   };
 
-  const removeSlide = (id: string) => {
+  const removeSlide = (slideId: string) => {
     socket.emit('remove-slide', {
-      presentationId: presentation.id,
-      slideId: id,
+      presentationId: presentation?.id,
+      slideId,
     });
   };
 
-  const changeUserRole = (userId: string, newRole: 'editor' | 'viewer') => {
+  const changeUserRole = (userId: string, newRole: 'EDITOR' | 'VIEWER') => {
     if (!isCreator) return;
     socket.emit('change-user-role', {
       userId,
       newRole,
-      presentationId: presentation.id,
+      presentationId: presentation?.id,
     });
   };
+
+  const navigateToSlide = (slideId: string) => {
+    setCurrentSlideId(slideId);
+    if (isCreator) {
+      socket.emit('navigate-slide', {
+        presentationId: presentation?.id,
+        slideId,
+      });
+    }
+  };
+
+  if (!presentation || !currentUser) {
+    return <div className="p-4">Loading presentation...</div>;
+  }
 
   return (
     <div className="flex h-screen">
       <SlideList
         slides={presentation.slides}
-        currentSlideId={currentSlideId ?? ''}
-        onSelectSlide={setCurrentSlideId}
+        currentSlideId={currentSlideId}
+        onSelectSlide={navigateToSlide}
         onAddSlide={addSlide}
         onRemoveSlide={removeSlide}
         isCreator={isCreator}
       />
-      <main className="flex-grow bg-gray-50 p-4 relative flex flex-col">
+      <main className="flex-grow bg-gray-50 p-4 flex flex-col">
         {currentSlide ? (
           <SlideEditor
             slide={currentSlide}
-            isEditable={currentUser.role !== 'viewer'}
+            isEditable={currentUser.role !== 'VIEWER'}
             onUpdateBlock={updateBlock}
             onAddBlock={addBlock}
           />

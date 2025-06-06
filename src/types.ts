@@ -1,7 +1,7 @@
 export type User = {
   id?: string;
   nickname: string;
-  role?: 'creator' | 'editor' | 'viewer';
+  role?: 'CREATOR' | 'EDITOR' | 'VIEWER';
 };
 
 export type TextBlock = {

@@ -2,7 +2,7 @@ import type { Slide } from '../../types.ts';
 
 interface SlideListProps {
   slides: Slide[];
-  currentSlideId: string;
+  currentSlideId:  string | null;
   onSelectSlide: (id: string) => void;
   onAddSlide: () => void;
   onRemoveSlide: (id: string) => void;

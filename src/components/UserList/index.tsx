@@ -3,7 +3,7 @@ import type { User } from '../../types';
 interface UserListProps {
   users: User[];
   currentUserId: string;
-  onChangeRole: (userId: string, newRole: 'editor' | 'viewer') => void;
+  onChangeRole: (userId: string, newRole: 'EDITOR' | 'VIEWER') => void;
   isCreator: boolean;
 }
 
@@ -23,7 +23,7 @@ export default function UserList({ users, currentUserId, onChangeRole, isCreator
             {isCreator && user.id !== currentUserId && (
               <select
                 value={user.role}
-                onChange={(e) => onChangeRole(user.id, e.target.value as 'editor' | 'viewer')}
+                onChange={(e) => onChangeRole(user.id!, e.target.value as 'EDITOR' | 'VIEWER')}
                 className="ml-2 border border-gray-300 rounded"
               >
                 <option value="viewer">Viewer</option>
