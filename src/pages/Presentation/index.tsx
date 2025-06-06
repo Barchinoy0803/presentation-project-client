@@ -10,7 +10,7 @@ import type { Presentation, TextBlock, User, Slide } from '../../types';
 import type { RootState } from '../../service';
 import debounce from 'lodash/debounce';
 
-const socket: Socket = io('http://localhost:3000');
+const socket: Socket = io('https://presentation-project-server.onrender.com');
 
 const PresentationPage = () => {
   const { presentationId } = useParams<{ presentationId: string }>();
