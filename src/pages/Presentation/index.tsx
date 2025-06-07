@@ -58,10 +58,7 @@ const PresentationPage = () => {
     const onSlideAdded = (slide: Slide) => {
       setPresentation(prev => {
         if (!prev) return prev;
-        return {
-          ...prev,
-          slides: [...prev.slides, slide],
-        };
+        return { ...prev, slides: [...prev.slides, slide] };
       });
     };
 
@@ -72,12 +69,7 @@ const PresentationPage = () => {
         return {
           ...prev,
           slides: prev.slides.map(slide => 
-            slide.id === slideId
-              ? {
-                  ...slide,
-                  blocks: slide.blocks.map(b => b.id === block.id ? block : b),
-                }
-              : slide
+            slide.id === slideId ? { ...slide, blocks: slide.blocks.map(b => b.id === block.id ? block : b) } : slide
           ),
         };
       });
@@ -89,12 +81,7 @@ const PresentationPage = () => {
         return {
           ...prev,
           slides: prev.slides.map(slide => 
-            slide.id === slideId
-              ? {
-                  ...slide,
-                  blocks: [...slide.blocks, block],
-                }
-              : slide
+            slide.id === slideId ? { ...slide, blocks: [...slide.blocks, block] } : slide
           ),
         };
       });
@@ -106,12 +93,7 @@ const PresentationPage = () => {
         return {
           ...prev,
           slides: prev.slides.map(slide => 
-            slide.id === slideId
-              ? {
-                  ...slide,
-                  blocks: slide.blocks.filter(b => b.id !== blockId),
-                }
-              : slide
+            slide.id === slideId ? { ...slide, blocks: slide.blocks.filter(b => b.id !== blockId) } : slide
           ),
         };
       });
@@ -120,25 +102,16 @@ const PresentationPage = () => {
     const onSlideRemoved = (slideId: string) => {
       setPresentation(prev => {
         if (!prev) return prev;
-        const newSlides = prev.slides.filter(s => s.id !== slideId);
-        return {
-          ...prev,
-          slides: newSlides,
-        };
+        return { ...prev, slides: prev.slides.filter(s => s.id !== slideId) };
       });
     };
 
     const onUserRoleChanged = (user: User) => {
       setPresentation(prev => {
         if (!prev) return prev;
-        return {
-          ...prev,
-          users: prev.users.map(u => u.id === user.id ? user : u),
-        };
+        return { ...prev, users: prev.users.map(u => u.id === user.id ? user : u) };
       });
-      if (currentUser?.id === user.id) {
-        setCurrentUser(user);
-      }
+      if (currentUser?.id === user.id) setCurrentUser(user);
     };
 
     const onSlideNavigated = (slideId: string) => {
@@ -169,95 +142,54 @@ const PresentationPage = () => {
   const debouncedUpdateBlock = useCallback(
     debounce((block: TextBlock) => {
       if (!currentSlide) return;
-      socket.emit('update-block', {
-        presentationId: presentation?.id,
-        block,
-        slideId: currentSlide.id,
-      });
+      socket.emit('update-block', { presentationId: presentation?.id, block, slideId: currentSlide.id });
     }, 100),
     [currentSlide, presentation?.id]
   );
 
   const updateBlock = (block: TextBlock) => {
     if (!currentSlide) return;
-    
     setPresentation(prev => {
       if (!prev) return prev;
       return {
         ...prev,
         slides: prev.slides.map(slide => 
-          slide.id === currentSlide.id
-            ? {
-                ...slide,
-                blocks: slide.blocks.map(b => b.id === block.id ? block : b),
-              }
-            : slide
+          slide.id === currentSlide.id ? { ...slide, blocks: slide.blocks.map(b => b.id === block.id ? block : b) } : slide
         ),
       };
     });
-
     debouncedUpdateBlock(block);
   };
 
   const addBlock = () => {
     if (!currentSlide) return;
-    const newBlock: TextBlock = {
-      id: uuidv4(),
-      content: 'New Text',
-      x: 50,
-      y: 50,
-    };
-    socket.emit('add-block', {
-      presentationId: presentation?.id,
-      block: newBlock,
-      slideId: currentSlide.id,
-    });
+    const newBlock: TextBlock = { id: uuidv4(), content: 'New Text', x: 50, y: 50 };
+    socket.emit('add-block', { presentationId: presentation?.id, block: newBlock, slideId: currentSlide.id });
   };
 
   const removeBlock = (blockId: string) => {
     if (!currentSlide) return;
-    socket.emit('remove-block', {
-      presentationId: presentation?.id,
-      blockId,
-      slideId: currentSlide.id,
-    });
+    socket.emit('remove-block', { presentationId: presentation?.id, blockId, slideId: currentSlide.id });
   };
 
   const addSlide = () => {
-    const newSlide = {
-      id: uuidv4(),
-      title: 'New Slide',
-      blocks: [],
-    };
-    socket.emit('add-slide', {
-      presentationId: presentation?.id,
-      slide: newSlide,
-    });
+    const newSlide = { id: uuidv4(), title: 'New Slide', blocks: [] };
+    socket.emit('add-slide', { presentationId: presentation?.id, slide: newSlide });
   };
 
   const removeSlide = (slideId: string) => {
-    socket.emit('remove-slide', {
-      presentationId: presentation?.id,
-      slideId,
-    });
+    socket.emit('remove-slide', { presentationId: presentation?.id, slideId });
   };
 
   const changeUserRole = (userId: string, newRole: 'EDITOR' | 'VIEWER') => {
     if (!isCreator) return;
-    socket.emit('change-user-role', {
-      userId,
-      newRole,
-      presentationId: presentation?.id,
-    });
+    socket.emit('change-user-role', { userId, newRole, presentationId: presentation?.id });
   };
 
   const navigateToSlide = (slideId: string) => {
     setCurrentSlideId(slideId);
     if (isCreator) {
-      socket.emit('navigate-slide', {
-        presentationId: presentation?.id,
-        slideId,
-      });
+      socket.emit('navigate-slide', { presentationId: presentation?.id, slideId });
     }
   };
 
@@ -266,33 +198,49 @@ const PresentationPage = () => {
   }
 
   return (
-    <div className="flex h-screen">
-      <SlideList
-        slides={presentation.slides}
-        currentSlideId={currentSlideId}
-        onSelectSlide={navigateToSlide}
-        onAddSlide={addSlide}
-        onRemoveSlide={removeSlide}
-        isCreator={isCreator}
-      />
-      <main className="flex-grow bg-gray-50 p-4 flex flex-col">
-        {currentSlide ? (
-          <SlideEditor
-            slide={currentSlide}
-            isEditable={currentUser.role !== 'VIEWER'}
-            onUpdateBlock={updateBlock}
-            onAddBlock={addBlock}
-          />
-        ) : (
-          <div>Select a slide</div>
-        )}
-      </main>
-      <UserList
-        users={presentation.users}
-        currentUserId={currentUser.id!}
-        onChangeRole={changeUserRole}
-        isCreator={isCreator}
-      />
+    <div className="flex h-screen flex-col bg-gray-100">
+      <header className="bg-indigo-700 text-white p-3 flex items-center justify-between">
+        <h1 className="text-xl font-bold truncate max-w-xs">
+          {presentation.title}
+        </h1>
+        <div className="text-sm">
+          {presentation.users.length} online
+        </div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        <SlideList
+          slides={presentation.slides}
+          currentSlideId={currentSlideId}
+          onSelectSlide={navigateToSlide}
+          onAddSlide={addSlide}
+          onRemoveSlide={removeSlide}
+          isCreator={isCreator}
+          className="w-48 bg-white border-r border-gray-200"
+        />
+
+        <main className="flex-1 bg-gray-50 p-4 flex flex-col">
+          {currentSlide ? (
+            <SlideEditor
+              slide={currentSlide}
+              isEditable={currentUser.role !== 'VIEWER'}
+              onUpdateBlock={updateBlock}
+              onAddBlock={addBlock}
+              onRemoveBlock={removeBlock}
+            />
+          ) : (
+            <div>Select a slide</div>
+          )}
+        </main>
+
+        <UserList
+          users={presentation.users}
+          currentUserId={currentUser.id!}
+          onChangeRole={changeUserRole}
+          isCreator={isCreator}
+          className="w-56 bg-white border-l border-gray-200"
+        />
+      </div>
     </div>
   );
 };

@@ -4,12 +4,14 @@ export type User = {
   role?: 'CREATOR' | 'EDITOR' | 'VIEWER';
 };
 
-export type TextBlock = {
+export interface TextBlock {
   id: string;
-  content: string;
   x: number;
   y: number;
-};
+  width?: number;
+  height?: number;
+  content: string;
+}
 
 export type Slide = {
   id: string;

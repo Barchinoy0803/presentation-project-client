@@ -6,9 +6,10 @@ interface SlideEditorProps {
   isEditable: boolean;
   onUpdateBlock: (block: TextBlock) => void;
   onAddBlock: () => void;
+  onRemoveBlock: (blockId: string) => void;
 }
 
-export default function SlideEditor({ slide, isEditable, onUpdateBlock, onAddBlock }: SlideEditorProps) {
+export default function SlideEditor({ slide, isEditable, onUpdateBlock, onAddBlock, onRemoveBlock }: SlideEditorProps) {
   const handleDrag = (id: string, x: number, y: number) => {
     const block = slide.blocks.find((b) => b.id === id);
     if (!block) return;
@@ -22,14 +23,16 @@ export default function SlideEditor({ slide, isEditable, onUpdateBlock, onAddBlo
   };
 
   return (
-    <div className="flex-grow relative bg-white shadow-inner overflow-hidden">
-      <h3 className="text-center font-semibold py-2 border-b border-gray-300">{slide.title}</h3>
+    <div className="flex-grow relative bg-white shadow-inner overflow-hidden rounded-lg">
+      <h3 className="text-center font-semibold py-2 border-b border-gray-300 bg-gray-100">
+        {slide.title}
+      </h3>
       <button
         onClick={onAddBlock}
         disabled={!isEditable}
-        className="absolute top-2 right-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:bg-gray-400"
+        className="absolute top-3 right-3 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 disabled:bg-gray-400 shadow-md"
       >
-        + Add Text Block
+        +
       </button>
       <div className="w-full h-full relative">
         {slide.blocks.map((block) => (
@@ -39,6 +42,7 @@ export default function SlideEditor({ slide, isEditable, onUpdateBlock, onAddBlo
             isEditable={isEditable}
             onChangeContent={handleChangeContent}
             onDrag={handleDrag}
+            onRemove={() => onRemoveBlock(block.id)}
           />
         ))}
       </div>
