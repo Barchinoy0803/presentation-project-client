@@ -33,6 +33,8 @@ const PresentationPage = () => {
       socket.off('slide-removed');
       socket.off('user-role-changed');
       socket.off('slide-navigated');
+      socket.off('user-joined');
+      socket.off('user-left');
     };
   }, [presentationId, userName]);
 
@@ -44,6 +46,10 @@ const PresentationPage = () => {
   const isCreator = useMemo(() => {
     return currentUser?.id === presentation?.creatorId;
   }, [currentUser, presentation]);
+
+  const isEditor = useMemo(() => {
+    return currentUser?.role === 'EDITOR';
+  }, [currentUser]);
 
   useEffect(() => {
     const onPresentationData = (data: Presentation) => {
@@ -68,7 +74,7 @@ const PresentationPage = () => {
         if (!prev) return prev;
         return {
           ...prev,
-          slides: prev.slides.map(slide => 
+          slides: prev.slides.map(slide =>
             slide.id === slideId ? { ...slide, blocks: slide.blocks.map(b => b.id === block.id ? block : b) } : slide
           ),
         };
@@ -80,7 +86,7 @@ const PresentationPage = () => {
         if (!prev) return prev;
         return {
           ...prev,
-          slides: prev.slides.map(slide => 
+          slides: prev.slides.map(slide =>
             slide.id === slideId ? { ...slide, blocks: [...slide.blocks, block] } : slide
           ),
         };
@@ -92,7 +98,7 @@ const PresentationPage = () => {
         if (!prev) return prev;
         return {
           ...prev,
-          slides: prev.slides.map(slide => 
+          slides: prev.slides.map(slide =>
             slide.id === slideId ? { ...slide, blocks: slide.blocks.filter(b => b.id !== blockId) } : slide
           ),
         };
@@ -118,6 +124,31 @@ const PresentationPage = () => {
       setCurrentSlideId(slideId);
     };
 
+    const onUserJoined = ({ user, presentation }: { user: User; presentation: Presentation }) => {
+      setPresentation(prev => {
+        if (!prev) return presentation;
+
+        const existingUsers = prev.users.filter(u =>
+          !presentation.users.some(pu => pu.id === u.id)
+        );
+
+        return {
+          ...presentation,
+          users: [...existingUsers, ...presentation.users]
+        };
+      });
+
+      if (user.nickname === userName) {
+        setCurrentUser(user);
+      }
+    };
+
+    const onUserLeft = () => {
+      if (presentationId) {
+        socket.emit('join-presentation', { nickname: userName, presentationId });
+      }
+    };
+
     socket.on('presentation-data', onPresentationData);
     socket.on('slide-added', onSlideAdded);
     socket.on('block-updated', onBlockUpdated);
@@ -126,6 +157,8 @@ const PresentationPage = () => {
     socket.on('slide-removed', onSlideRemoved);
     socket.on('user-role-changed', onUserRoleChanged);
     socket.on('slide-navigated', onSlideNavigated);
+    socket.on('user-joined', onUserJoined);
+    socket.on('user-left', onUserLeft);
 
     return () => {
       socket.off('presentation-data', onPresentationData);
@@ -136,6 +169,8 @@ const PresentationPage = () => {
       socket.off('slide-removed', onSlideRemoved);
       socket.off('user-role-changed', onUserRoleChanged);
       socket.off('slide-navigated', onSlideNavigated);
+      socket.off('user-joined', onUserJoined);
+      socket.off('user-left', onUserLeft);
     };
   }, [currentSlideId, currentUser?.id, userName]);
 
@@ -153,7 +188,7 @@ const PresentationPage = () => {
       if (!prev) return prev;
       return {
         ...prev,
-        slides: prev.slides.map(slide => 
+        slides: prev.slides.map(slide =>
           slide.id === currentSlide.id ? { ...slide, blocks: slide.blocks.map(b => b.id === block.id ? block : b) } : slide
         ),
       };
@@ -216,6 +251,7 @@ const PresentationPage = () => {
           onAddSlide={addSlide}
           onRemoveSlide={removeSlide}
           isCreator={isCreator}
+          isEditor={isEditor}
           className="w-48 bg-white border-r border-gray-200"
         />
 
@@ -227,19 +263,23 @@ const PresentationPage = () => {
               onUpdateBlock={updateBlock}
               onAddBlock={addBlock}
               onRemoveBlock={removeBlock}
+              isCreator={isCreator}
+              isEditor={isEditor}
             />
           ) : (
             <div>Select a slide</div>
           )}
         </main>
-
-        <UserList
-          users={presentation.users}
-          currentUserId={currentUser.id!}
-          onChangeRole={changeUserRole}
-          isCreator={isCreator}
-          className="w-56 bg-white border-l border-gray-200"
-        />
+        {
+          isCreator &&
+          <UserList
+            users={presentation.users}
+            currentUserId={currentUser.id!}
+            onChangeRole={changeUserRole}
+            isCreator={isCreator}
+            className="w-56 bg-white border-l border-gray-200"
+          />
+        }
       </div>
     </div>
   );

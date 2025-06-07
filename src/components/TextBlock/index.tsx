@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import type { TextBlock } from '../../types';
+import { MdClose } from 'react-icons/md';
 
 interface TextBlockProps {
   block: TextBlock;
@@ -108,9 +109,9 @@ export default function TextBlock({
               e.stopPropagation();
               onRemove();
             }}
-            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-md"
+            className="absolute -top-0 -right-0 text-red-500 bg-transparent text-[20px] flex items-center justify-center"
           >
-            ×
+            <MdClose className='text-[16px] cursor-pointer m-1' />
           </button>
         )}
 
