@@ -19,7 +19,7 @@ import {
 import { LuStrikethrough } from "react-icons/lu";
 import { RiFontColor } from "react-icons/ri";
 import { BsPalette } from "react-icons/bs";
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
 
 interface SlideEditorProps {
@@ -44,8 +44,6 @@ export default function SlideEditor({
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [colorPickerAnchor, setColorPickerAnchor] = useState<HTMLElement | null>(null);
   const [colorPickerTarget, setColorPickerTarget] = useState<'text' | 'background'>('text');
-  const colorButtonRef = useRef<HTMLButtonElement>(null);
-  const bgButtonRef = useRef<HTMLButtonElement>(null);
 
   const activeBlock = activeBlockId ? slide.blocks.find(b => b.id === activeBlockId) : null;
 
@@ -59,10 +57,6 @@ export default function SlideEditor({
     const block = slide.blocks.find((b) => b.id === id);
     if (!block) return;
     onUpdateBlock({ ...block, content });
-  };
-
-  const handleBlockFocus = (id: string) => {
-    setActiveBlockId(id);
   };
 
   const toggleTextStyle = (style: keyof TextBlock['styles']) => {
@@ -200,7 +194,6 @@ export default function SlideEditor({
             
             <Tooltip title="Text Color">
               <IconButton
-                ref={colorButtonRef}
                 onClick={(e) => openColorPicker('text', e)}
                 disabled={!activeBlock}
               >
@@ -212,7 +205,6 @@ export default function SlideEditor({
             
             <Tooltip title="Background Color">
               <IconButton
-                ref={bgButtonRef}
                 onClick={(e) => openColorPicker('background', e)}
                 disabled={!activeBlock}
               >
@@ -234,7 +226,7 @@ export default function SlideEditor({
         )}
       </div>
       
-      <div className="w-full h-full relative">
+      <div className="w-full h-full relative" onClick={() => setActiveBlockId(null)}>
         {slide?.blocks?.map((block) => (
           <TextBlockComponent
             key={block.id}
@@ -243,7 +235,7 @@ export default function SlideEditor({
             onChangeContent={handleChangeContent}
             onDrag={handleDrag}
             onRemove={() => onRemoveBlock(block.id)}
-            onFocus={() => handleBlockFocus(block.id)}
+            onFocus={() => setActiveBlockId(block.id)}
             isActive={activeBlockId === block.id}
           />
         ))}
