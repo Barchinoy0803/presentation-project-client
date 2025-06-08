@@ -91,7 +91,7 @@ export default function TextBlock({
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
-    >
+    ><input type="text" />
       <div className="relative h-full w-full bg-white shadow-sm">
         <div
           ref={contentRef}
@@ -126,3 +126,4 @@ export default function TextBlock({
     </div>
   );
 }
+

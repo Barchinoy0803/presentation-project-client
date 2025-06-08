@@ -6,7 +6,6 @@ import { BiItalic } from "react-icons/bi";
 import { PiTextAUnderlineBold } from "react-icons/pi";
 import { FaBold } from "react-icons/fa";
 
-
 interface SlideEditorProps {
   slide: Slide;
   isEditable: boolean;
