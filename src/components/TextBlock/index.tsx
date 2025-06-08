@@ -1,129 +1,120 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { TextBlock } from '../../types';
-import { MdClose } from 'react-icons/md';
+import ContentEditable, { type ContentEditableEvent } from 'react-contenteditable';
 
-interface TextBlockProps {
+interface TextBlockComponentProps {
   block: TextBlock;
   isEditable: boolean;
+  isActive: boolean;
   onChangeContent: (id: string, content: string) => void;
   onDrag: (id: string, x: number, y: number) => void;
-  onResize?: (id: string, width: number, height: number) => void;
-  onRemove?: () => void;
+  onRemove: () => void;
+  onFocus: () => void;
 }
 
-export default function TextBlock({
+export default function TextBlockComponent({
   block,
   isEditable,
+  isActive,
   onChangeContent,
   onDrag,
-  onResize,
-  onRemove,
-}: TextBlockProps) {
-  const [editing, setEditing] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const dragData = useRef<{ offsetX: number; offsetY: number } | null>(null);
+  onFocus
+}: TextBlockComponentProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const contentEditableRef = useRef<HTMLElement>(null);
+  const blockRef = useRef<HTMLDivElement>(null);
+
+  const handleContentChange = (evt: ContentEditableEvent) => {
+    onChangeContent(block.id, evt.target.value);
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isEditable || editing) return;
-    dragData.current = { offsetX: e.clientX - block.x, offsetY: e.clientY - block.y };
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    if (!isEditable) return;
+    
+    if (e.button === 0) { // Left click
+      setIsDragging(true);
+      setStartPos({
+        x: e.clientX - block.x,
+        y: e.clientY - block.y
+      });
+      e.stopPropagation();
+    }
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!dragData.current) return;
-    onDrag(block.id, e.clientX - dragData.current.offsetX, e.clientY - dragData.current.offsetY);
+    if (!isDragging || !isEditable) return;
+    
+    onDrag(
+      block.id,
+      e.clientX - startPos.x,
+      e.clientY - startPos.y
+    );
   };
 
   const handleMouseUp = () => {
-    dragData.current = null;
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
+    setIsDragging(false);
   };
 
-  const handleDoubleClick = () => {
-    if (isEditable) setEditing(true);
-  };
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, startPos]);
 
-  const handleBlur = () => {
-    setEditing(false);
-    const newText = contentRef.current?.innerText || '';
-    onChangeContent(block.id, newText);
-  };
+  useEffect(() => {
+    if (isActive && contentEditableRef.current) {
+      contentEditableRef.current.focus();
+    }
+  }, [isActive]);
 
-  const resizeRef = useRef<HTMLDivElement>(null);
-  const resizing = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null);
-
-  const startResize = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    resizing.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      startW: block.width || 200,
-      startH: block.height || 100,
-    };
-    window.addEventListener('mousemove', resizeMove);
-    window.addEventListener('mouseup', stopResize);
-  };
-
-  const resizeMove = (e: MouseEvent) => {
-    if (!resizing.current) return;
-    const newWidth = resizing.current.startW + (e.clientX - resizing.current.startX);
-    const newHeight = resizing.current.startH + (e.clientY - resizing.current.startY);
-    onResize?.(block.id, newWidth, newHeight);
-  };
-
-  const stopResize = () => {
-    resizing.current = null;
-    window.removeEventListener('mousemove', resizeMove);
-    window.removeEventListener('mouseup', stopResize);
-  };
+  const getStyle = () => ({
+    position: 'absolute' as const,
+    left: `${block.x}px`,
+    top: `${block.y}px`,
+    width: `${block.width}px`,
+    minHeight: `${block.height}px`,
+    padding: '8px',
+    cursor: isEditable ? 'move' : 'default',
+    outline: isActive ? '2px dashed #3b82f6' : 'none',
+    backgroundColor: block.styles.backgroundColor || 'transparent',
+    color: block.styles.color || '#000000',
+    fontWeight: block.styles.bold ? 'bold' : 'normal',
+    fontStyle: block.styles.italic ? 'italic' : 'normal',
+    textDecoration: [
+      block.styles.underline ? 'underline' : '',
+      block.styles.strikethrough ? 'line-through' : ''
+    ].join(' '),
+    textAlign: block.styles.textAlign || 'left'
+  });
 
   return (
     <div
-      className="absolute border border-blue-400"
-      style={{
-        left: block.x,
-        top: block.y,
-        width: block.width || 200,
-        height: block.height || 100,
-        cursor: editing ? 'text' : 'move',
-      }}
+      ref={blockRef}
+      style={getStyle()}
       onMouseDown={handleMouseDown}
-      onDoubleClick={handleDoubleClick}
-    ><input type="text" />
-      <div className="relative h-full w-full bg-white shadow-sm">
-        <div
-          ref={contentRef}
-          className="w-full h-full p-2 outline-none overflow-auto"
-          contentEditable={isEditable && editing}
-          suppressContentEditableWarning
-          onBlur={handleBlur}
-        >
-          {block.content}
-        </div>
-
-        {isEditable && onRemove && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-            className="absolute -top-0 -right-0 text-red-500 bg-transparent text-[20px] flex items-center justify-center"
-          >
-            <MdClose className='text-[16px] cursor-pointer m-1' />
-          </button>
-        )}
-
-        {isEditable && (
-          <div
-            ref={resizeRef}
-            onMouseDown={startResize}
-            className="absolute w-3 h-3 bg-blue-500 bottom-0 right-0 cursor-se-resize z-10"
-          />
-        )}
-      </div>
+      onClick={(e) => {
+        e.stopPropagation();
+        onFocus();
+      }}
+    >
+      <ContentEditable
+        innerRef={contentEditableRef}
+        html={block.content}
+        disabled={!isEditable}
+        onChange={handleContentChange}
+        tagName="div"
+        style={{
+          width: '100%',
+          height: '100%',
+          outline: 'none'
+        }}
+      />
     </div>
   );
 }
-

@@ -198,7 +198,13 @@ const PresentationPage = () => {
 
   const addBlock = () => {
     if (!currentSlide) return;
-    const newBlock: TextBlock = { id: uuidv4(), content: 'New Text', x: 50, y: 50 };
+    const newBlock: TextBlock = {
+      id: uuidv4(), content: 'New Text', x: 50, y: 50,
+      type: 'text',
+      width: 0,
+      height: 0,
+      styles: {},
+    };
     socket.emit('add-block', { presentationId: presentation?.id, block: newBlock, slideId: currentSlide.id });
   };
 
