@@ -4,21 +4,6 @@ export type User = {
   role?: 'CREATOR' | 'EDITOR' | 'VIEWER';
 };
 
-export interface TextBlock {
-  id: string;
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  content: string;
-}
-
-export type Slide = {
-  id: string;
-  title: string;
-  blocks: TextBlock[];
-};
-
 export type Presentation = {
   id: string;
   title: string;
@@ -44,4 +29,32 @@ export interface PresentationDialog {
 export interface PresentationData {
   user: User;
   title: string;
+}
+
+export interface TextBlockStyles {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  color?: string;
+  backgroundColor?: string;
+  textAlign?: 'left' | 'center' | 'right';
+  fontSize?: number;
+}
+
+export interface TextBlock {
+  id: string;
+  type: 'text';
+  content: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  styles: TextBlockStyles;
+}
+
+export interface Slide {
+  id: string;
+  title: string;
+  blocks: TextBlock[];
 }

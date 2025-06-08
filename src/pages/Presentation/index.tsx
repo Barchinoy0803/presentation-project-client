@@ -10,7 +10,7 @@ import type { Presentation, TextBlock, User, Slide } from '../../types';
 import type { RootState } from '../../service';
 import debounce from 'lodash/debounce';
 
-const socket: Socket = io('https://presentation-project-server.onrender.com');
+const socket: Socket = io('http://localhost:3000');
 
 const PresentationPage = () => {
   const { presentationId } = useParams<{ presentationId: string }>();
@@ -198,7 +198,13 @@ const PresentationPage = () => {
 
   const addBlock = () => {
     if (!currentSlide) return;
-    const newBlock: TextBlock = { id: uuidv4(), content: 'New Text', x: 50, y: 50 };
+    const newBlock: TextBlock = {
+      id: uuidv4(), content: 'New Text', x: 50, y: 50,
+      type: 'text',
+      width: 0,
+      height: 0,
+      styles: {},
+    };
     socket.emit('add-block', { presentationId: presentation?.id, block: newBlock, slideId: currentSlide.id });
   };
 
