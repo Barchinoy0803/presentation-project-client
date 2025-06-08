@@ -82,16 +82,6 @@ export default function TextBlockComponent({
     cursor: dragging ? 'grabbing' : 'move',
     outline: isActive ? '2px dashed #3b82f6' : 'none',
     backgroundColor: block.styles.backgroundColor || 'transparent',
-    color: block.styles.color || '#000',
-    fontWeight: block.styles.bold ? 'bold' : undefined,
-    fontStyle: block.styles.italic ? 'italic' : undefined,
-    textDecoration: [
-      block.styles.underline && 'underline',
-      block.styles.strikethrough && 'line-through'
-    ].filter(Boolean).join(' ') || 'none',
-    textAlign: block.styles.textAlign || 'left',
-    userSelect: 'none' as const,
-    boxSizing: 'border-box' as const,
   };
 
   return (
@@ -111,17 +101,30 @@ export default function TextBlockComponent({
             <MdClose />
           </button>
         )}
-        <div
-          ref={contentRef}
-          contentEditable={isEditable}
-          suppressContentEditableWarning
-          onInput={(e) => {
-            onChangeContent(block.id, (e.target as HTMLDivElement).innerHTML);
+        <textarea
+          ref={contentRef as unknown as React.RefObject<HTMLTextAreaElement>}
+          value={block.content}
+          onChange={(e) => onChangeContent(block.id, e.target.value)}
+          readOnly={!isEditable}
+          style={{
+            width: '100%',
+            height: '100%',
+            resize: 'none',
+            border: 'none',
+            background: 'transparent',
+            color: block.styles.color || '#000',
+            fontWeight: block.styles.bold ? 'bold' : undefined,
+            fontStyle: block.styles.italic ? 'italic' : undefined,
+            textDecoration: [
+              block.styles.underline && 'underline',
+              block.styles.strikethrough && 'line-through'
+            ].filter(Boolean).join(' ') || 'none',
+            textAlign: block.styles.textAlign || 'left',
+            outline: 'none',
+            cursor: isEditable ? 'text' : 'default',
+            overflow: 'auto',
           }}
-          style={{ width: '100%', height: '100%', overflow: 'auto', outline: 'none', cursor: 'text' }}
-        >
-          {block.content}
-        </div>
+        />
       </div>
     </Resizable>
   );
