@@ -10,7 +10,7 @@ import type { Presentation, TextBlock, User, Slide } from '../../types';
 import type { RootState } from '../../service';
 import debounce from 'lodash/debounce';
 
-const socket: Socket = io('http://localhost:3000');
+const socket: Socket = io(import.meta.env.VITE_BASE_URL);
 
 const PresentationPage = () => {
   const { presentationId } = useParams<{ presentationId: string }>();
